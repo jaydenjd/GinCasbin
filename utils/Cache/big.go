@@ -9,5 +9,9 @@ var GlobalCache *bigcache.BigCache
 
 func init() {
 	// 初始化BigCache实例
-	GlobalCache, _ = bigcache.NewBigCache(bigcache.DefaultConfig(30 * time.Minute))
+	var err error
+	GlobalCache, err = bigcache.NewBigCache(bigcache.DefaultConfig(1 * time.Minute))
+	if err != nil {
+		panic(err)
+	}
 }

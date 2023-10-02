@@ -17,29 +17,29 @@ go run main.go
 [GIN-debug] DELETE /api/v1/user/:id          --> GinCasbin/routers.api.func5 (4 handlers)
 [GIN-debug] PUT    /api/v1/user/:id          --> GinCasbin/routers.api.func6 (4 handlers)
 [GIN-debug] GET    /api/v1/user/:id          --> GinCasbin/routers.api.func7 (4 handlers)
-[GIN-debug] Environment variable PORT is undefined. Using port :8080 by default
-[GIN-debug] Listening and serving HTTP on :8080
+[GIN-debug] Environment variable PORT is undefined. Using port :8084 by default
+[GIN-debug] Listening and serving HTTP on :8084
 ```
 
 ### 测试
 ```bash
 # 访问接口
 # 参数缺失
-curl -X POST http://127.0.0.1:8080/api/routers
+curl -X POST http://127.0.0.1:8084/api/routers
 {"code":-1,"message":"header miss userName","data":null}
 
 
 # 无访问权限
-curl -X POST -H "userName:tom" http://127.0.0.1:8080/api/routers
+curl -X POST -H "userName:tom" http://127.0.0.1:8084/api/routers
 {"code":-1,"message":"access denied","data":null}
 
 
-# 添加一条规则(代码中是模拟数据)
-curl -X POST http://127.0.0.1:8080/api/acs
+# 添加一条规则
+curl -X POST -H "Content-Type:application/json" http://localhost:8084/api/acs -d '{"subject": "jayden", "object": "/api/routers", "action":"GET"}'
 {"code":200,"message":"success","data":"add success"}
 
 # 再次访问(有访问权限,可以访问)
-curl -X POST -H "userName:tom" http://127.0.0.1:8080/api/routers
+curl -X POST -H "userName:tom" http://127.0.0.1:8084/api/routers
 {
     "code":200,
     "message":"success",
@@ -82,16 +82,16 @@ INSERT INTO `ginCasbin`.`casbin_rule` (`p_type`, `v0`, `v1`, `v2`, `v3`, `v4`, `
 
 #再测试
 ## 添加接口
-curl -X POST -H "userName:admin" http://127.0.0.1:8080/api/v1/user
+curl -X POST -H "userName:admin" http://127.0.0.1:8084/api/v1/user
 {"code":200,"message":"user add success"}
 ## 查询接口
-curl -X GET -H "userName:admin" http://127.0.0.1:8080/api/v1/user/99
+curl -X GET -H "userName:admin" http://127.0.0.1:8084/api/v1/user/99
 {"code":200,"message":"user Get success 99"}
 ## 更新接口
-curl -X PUT -H "userName:admin" http://127.0.0.1:8080/api/v1/user/199
+curl -X PUT -H "userName:admin" http://127.0.0.1:8084/api/v1/user/199
 {"code":200,"message":"user update success 199"}
 ## 删除接口(没有分配访问权限)
-curl -X DELETE -H "userName:admin" http://127.0.0.1:8080/api/v1/user/299
+curl -X DELETE -H "userName:admin" http://127.0.0.1:8084/api/v1/user/299
 {"code":-1,"message":"access denied","data":null}
 
 ```

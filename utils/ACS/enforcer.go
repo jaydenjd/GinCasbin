@@ -2,17 +2,29 @@ package ACS
 
 import (
 	"GinCasbin/utils/DB"
-	"github.com/casbin/casbin"
-	"github.com/casbin/gorm-adapter"
+	"fmt"
+	"github.com/casbin/casbin/v2"
+	gormadapter "github.com/casbin/gorm-adapter/v3"
 )
 
 var Enforcer *casbin.Enforcer
 
 func init() {
-	// mysql 适配器
-	adapter := gormadapter.NewAdapterByDB(DB.Mysql)
 	// 通过mysql适配器新建一个enforcer
-	Enforcer = casbin.NewEnforcer("config/keymatch2_model.conf", adapter)
+	adapter, _ := gormadapter.NewAdapterByDB(DB.Mysql)
+	// 通过model.conf文件配置策略
+	var err error
+	Enforcer, err = casbin.NewEnforcer("config/keymatch2_model.conf", adapter)
+	if err != nil {
+		fmt.Println("NewCachedEnforcer err:", err)
+		panic(err)
+	}
+	Enforcer.EnableAutoSave(true)
+	err = Enforcer.LoadPolicy()
+	if err != nil {
+		return
+	}
+
 	// 日志记录
 	Enforcer.EnableLog(true)
 }

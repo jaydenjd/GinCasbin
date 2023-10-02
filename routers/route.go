@@ -5,12 +5,20 @@ import (
 	"GinCasbin/utils/ACS"
 	"GinCasbin/utils/APIResponse"
 	"GinCasbin/utils/Cache"
+	"fmt"
 	"github.com/gin-gonic/gin"
+	"log"
 )
 
 var (
 	R *gin.Engine
 )
+
+type RolePolicy struct {
+	Subject string `json:"subject,omitempty"`
+	Object  string `json:"object,omitempty"`
+	Action  string `json:"action,omitempty"`
+}
 
 func init() {
 	R = gin.Default()
@@ -25,29 +33,51 @@ func api() {
 		// 模拟添加一条Policy策略
 		auth.POST("acs", func(c *gin.Context) {
 			APIResponse.C = c
-			subject := "tom"
-			object := "/api/routers"
-			action := "POST"
-			cacheName := subject + object + action
-			result := ACS.Enforcer.AddPolicy(subject, object, action)
+			var rolePolicy RolePolicy
+			err := c.ShouldBind(&rolePolicy)
+			if err != nil {
+				APIResponse.Error("bind fail")
+				return
+			}
+			cacheName := rolePolicy.Subject + rolePolicy.Object + rolePolicy.Action
+			fmt.Println(cacheName)
+			result, err := ACS.Enforcer.AddPolicy(rolePolicy.Subject, rolePolicy.Object, rolePolicy.Action)
+			if err != nil {
+				fmt.Println(err.Error())
+				APIResponse.Error("add fail " + err.Error())
+				return
+			}
 			if result {
-				// 清除缓存
-				_ = Cache.GlobalCache.Delete(cacheName)
 				APIResponse.Success("add success")
 			} else {
-				APIResponse.Error("add fail")
+				APIResponse.Error("add fail, maybe exist")
 			}
 		})
 		// 模拟删除一条Policy策略
-		auth.DELETE("acs/:id", func(context *gin.Context) {
-			APIResponse.C = context
-			result := ACS.Enforcer.RemovePolicy("tom", "/api/routers", "POST")
-			if result {
-				// 清除缓存 代码省略
-				APIResponse.Success("delete Policy success")
-			} else {
-				APIResponse.Error("delete Policy fail")
+		auth.DELETE("acs/:id", func(c *gin.Context) {
+			APIResponse.C = c
+			var rolePolicy RolePolicy
+			var err error
+			err = c.ShouldBind(&rolePolicy)
+			if err != nil {
+				APIResponse.Error("bind fail")
+				return
 			}
+			cacheName := rolePolicy.Subject + rolePolicy.Object + rolePolicy.Action
+			result, err := ACS.Enforcer.RemovePolicy(rolePolicy.Subject, rolePolicy.Object, rolePolicy.Action)
+
+			if err != nil {
+				APIResponse.Error("delete Policy fail")
+				return
+			}
+			if result {
+				// 清除缓存
+				err = Cache.GlobalCache.Delete(cacheName)
+				if err != nil {
+					log.Fatalf("delete cache fail")
+				}
+			}
+			APIResponse.Success("delete success")
 		})
 		// 获取路由列表
 		auth.POST("/routers", middleware.Privilege(), func(c *gin.Context) {
